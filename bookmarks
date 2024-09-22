@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+import argparse
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import json
+import sqlite3
+import sys
+
+SCHEMA = """
+    CREATE TABLE IF NOT EXISTS bookmark (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        url TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        note TEXT,
+    );
+    CREATE TABLE IF NOT EXISTS tag (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS bookmark_tag (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bookmark_id INTEGER,
+        tag_id INTEGER,
+        FOREIGN KEY(bookmark_id) REFERENCES bookmark(id)
+        FOREIGN KEY(tag_id) REFERENCES tag(id)
+    );
+"""
+
+def connect(path):
+    try:
+        c = sqlite3.connect(path)
+        c.row_factory = sqlite3.Row
+        return c
+    except sqlite3.Error:
+        print('error connecting to: {}'.format(path))
+
+def init(path):
+    with connect(path) as c:
+        return c.executescript(SCHEMA)
+
+def render(path):
+    html = ['<!doctype html><html lang="en">']
+    html.append('<head><meta charset="utf-8"><title>Bookmarks</title></head>')
+    html.append('<body><h1>Bookmarks</h1><ul>')
+    with connect(path) as c:
+        cx = c.execute('SELECT * FROM bookmark')
+        rs = cx.fetchall()
+        for i in rs:
+            html.append('<li><a href="{url}">{note}</a></li>'.format(**dict(i)))
+    html.append('</ul></body></html>')
+    return ''.join(html)
+
+def make_handler(path):
+    class Handler(BaseHTTPRequestHandler):
+        def _header(self):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+
+        def do_GET(self):
+            self._header()
+            self.wfile.write(bytes(render(path), 'utf-8'))
+
+    return Handler
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='Bookmark', description='Bookmark Manager')
+    parser.add_argument('database')
+    parser.add_argument('--port', dest='port', action='store', type=int, default=8000)
+    args = parser.parse_args()
+
+    init(args.database)
+    server = HTTPServer(('localhost', args.port), make_handler(args.database))
+    print('Server started http://localhost:%s' % (args.port))
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+    server.server_close()
+    print('Server stopped.')

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# USERKEY TOKEN
+. ${CONF:=$HOME/.pushover}
+
+SC="${0##*/}"
+TIMESTAMP="`date '+%F %T'`"
+TIMEOUT=5
+LOGFILE="$HOME/updown.log"
+
+if [ -z "$1" ];then
+    printf "$SC URL\n"
+    exit 1
+fi
+
+curl --max-time "$TIMEOUT" --silent "$1" > /dev/null
+if [ $? = 0 ];then
+    printf "$TIMESTAMP OK   $1\n" >> $LOGFILE
+else
+    printf "$TIMESTAMP DOWN $1\n" >> $LOGFILE
+    curl -s -F "token=$TOKEN" \
+        -F "user=$USERKEY" \
+        -F "message=$1" \
+        https://api.pushover.net/1/messages.json > /dev/null
+fi
