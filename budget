@@ -1,6 +1,11 @@
-# awk -f budget.awk  monthly.txt 
-# -2000,Person1,Mortgage
+#!/bin/sh
 
+if [ -z "$1" -o ! -f "$1" ];then
+    echo "budget FILE"
+    exit 0
+fi
+
+awk '
 BEGIN {
     FS="," 
 } 
@@ -32,4 +37,4 @@ END {
         printf "%s Total: %s\n", person, total_person[person]
         printf "-------------------------\n", total
     }
-}
+}' "$1"
