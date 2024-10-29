@@ -1,0 +1,170 @@
+#!/usr/bin/env python2.7
+
+import argparse
+import hashlib
+import logging
+import os
+import re
+import sqlite3
+import sys
+import traceback
+import tempfile
+
+CHUNK_SIZE=4096
+BUFFER_SIZE=2000
+EXCLUDE = ['ws_ftp.log']
+
+def create_db(path):
+    try:
+        if os.path.exists(path):
+            os.unlink(path)
+        con = sqlite3.connect(path)
+        cur = con.cursor()
+        cur.execute("""
+            CREATE TABLE file (
+                id INT,
+                path TEXT,
+                uid INT,
+                gid INT,
+                mtime DATETIME,
+                digest TEXT,
+                ext TEXT,
+                size INT
+                );
+        """)
+        con.commit()
+        cur.close()
+        return con
+    except:
+        traceback.print_exc()
+        logging.error('unable to create db: %s' % path)
+        raise Exception
+
+
+def update_db(con, data):
+    try:
+    stmt = """
+        INSERT INTO file
+        (path, uid, gid, mtime, digest, ext, size)
+        VALUES
+        (:path, :uid, :gid, :mtime, :digest, :ext, :size)
+    """
+    cur = con.cursor()
+    cur.execute(stmt, data)
+    con.commit()
+    cur.close()
+    except:
+    traceback.print_exc()
+    logging.error('unable to update db for: %s' % data['path'])
+    raise Exception
+
+def update_db_many(con, data):
+    try:
+        stmt = """
+            INSERT INTO file
+                (path, uid, gid, mtime, digest, ext, size)
+            VALUES
+                (:path, :uid, :gid, :mtime, :digest, :ext, :size)
+        """
+        cur = con.cursor()
+        cur.executemany(stmt, data)
+        con.commit()
+        cur.close()
+    except:
+        traceback.print_exc()
+        logging.error('unable to update db')
+        raise Exception
+
+
+def exclude(i, exclude=EXCLUDE):
+    for e in exclude:
+        if re.match(e, i, re.I):
+            logging.info('exclude: %s' % i)
+            return True
+    return False
+
+def checksum(path, chunk_size=CHUNK_SIZE):
+    hasher = hashlib.sha1()
+    try:
+        with open(path, 'rb') as f:
+            while True:
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    except:
+        logging.error('checksum: %s' % path)
+        return None
+
+def fstat(path):
+    try:
+        s = os.stat(path)
+        return {
+            'gid' : s.st_gid,
+            'mtime' : s.st_mtime,
+            'size' : s.st_size,
+            'uid' : s.st_uid
+        }
+    except:
+        logging.error('fstat: %s' % path)
+        return None
+
+def ext(path):
+    _, e = os.path.splitext(path)
+    if e:
+        if e.startswith('.'):
+            return e.lstrip('.')
+    return None
+
+def probe(path):
+    d = fstat(path)
+    if d:
+        digest = checksum(path)
+        if digest:
+            d['path'] = path
+            d['digest'] = digest
+            d['ext'] = ext(path)
+            return d
+    return None
+
+def run(root, writer, buffer_size=BUFFER_SIZE):
+    def oe(e):
+        return logging.error('walk: %s' % e.filename)
+
+    root = unicode(root)
+    for root, _, files in os.walk(root, onerror=oe):
+        for f in files:
+            if not exclude(f):
+                path = os.path.join(root, f)
+                logging.info('probing file: %s' % path)
+                info = probe(path)
+                if info:
+                    writer(info)
+
+def set_logging(s):
+    value = str(s)
+    level = getattr(logging, s.upper(), None)
+    if not isinstance(level, int):
+        raise argparse.ArgumentTypeError('Not a recognized log level')
+    else:
+        logging.basicConfig(level=level)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser('Walk a directory and gather all file info')
+    parser.add_argument('dir', help='directory to walk')
+    parser.add_argument('--log', type=set_logging, help="Set log level")
+    args = parser.parse_args()
+
+    con = create_db('wfs.db')
+
+    def make_writer(con):
+        def writer(data):
+            return update_db(con, data)
+        return writer
+
+    writer = make_writer(con)
+
+    if args.dir:
+        run(args.dir, writer)

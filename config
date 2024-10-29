@@ -1,0 +1,53 @@
+#!/bin/sh
+
+set -ef
+
+key() {
+    if `grep '^http://' "$1"`;then
+        key=`mktemp`
+        curl --silent --location --output $key "$1"
+    else
+        key=$1
+    fi
+
+    hash=$(gpg --batch --with-colons --show-keys --with-fingerprint $key | awk -F: '/^fpr/ { print $10 }') 
+
+    if [ $hash == $2 ];then
+        sudo rpmkeys --import $key
+    else
+        return 1
+    fi
+}
+
+off() {
+    if `systemctl is-active "$1"`;then
+        sudo systemctl stop "$1"
+    fi
+
+    if `systemctl is-enabled "$1"`;then
+        sudo systemctl disable "$1"
+    fi
+}
+
+on() {
+    if ! `systemctl is-active "$1"`;then
+        sudo systemctl start "$1"
+    fi
+
+    if ! `systemctl is-enabled "$1"`;then
+        sudo systemctl enable "$1"
+    fi
+}
+
+
+off systemd-resolved
+
+if [ -h /etc/resolv.conf ];then
+    sudo rm -f /etc/resolv.conf
+fi
+
+#sudo /usr/bin/printf "[main]\ndns=dnsmasq" > /etc/NetworkManager/conf.d/dns.conf
+#chmod 0644 /etc/NetworkManager/conf.d/dns.conf
+
+
+
