@@ -1,0 +1,33 @@
+#!/bin/sh
+
+set -ef
+
+# to dump a profile:
+# gsettings list-recursively $schema:$uuid/
+
+rootpath=$(dirname $(readlink -fm $0))
+schema=org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/
+profiles=$(gsettings get org.gnome.Terminal.ProfilesList list | tr -d "[]',")
+
+path=${rootpath}/dark.txt
+
+for i in ${profiles[*]};do
+    # just use jq?
+    j=$(gsettings get $schema:$i/ visible-name | tr -d "'")
+    if [ $j == "Dark" ];then
+        uuid=$i
+    fi
+done
+ 
+if [ -z $uuid ]; then
+    uuid=$(uuidgen)
+    profiles=$(echo -n $profiles $uuid | jq -R -s -c 'split(" ")')
+    gsettings set org.gnome.Terminal.ProfilesList list $profiles
+    gsettings set $schema:$uuid/ visible-name Dark
+fi
+
+cut -f2- -d' ' $path | while read line; do
+    key=$(echo $line | cut -f1 -d' ')
+    value=$(echo $line | cut -f2- -d' ')
+    gsettings set ${schema}:${uuid}/ $key "$value"
+done
