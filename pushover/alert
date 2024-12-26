@@ -1,0 +1,17 @@
+#!/bin/bash
+
+. ${CONF:=/etc/pushover}
+
+HOSTNAME="`hostname | tr a-z A-Z`"
+
+if [ "$1" = "ssh" ];then
+    MESSAGE="ssh login ${PAM_USER} from ${PAM_RHOST}"
+else
+    MESSAGE="$*"
+fi
+
+curl --silent --max-time 5 \
+--form "token=$TOKEN" \
+--form "user=$USERKEY" \
+--form 'message='"$HOSTNAME ALERT: $MESSAGE"'' \
+https://api.pushover.net/1/messages.json > /dev/null

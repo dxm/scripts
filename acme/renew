@@ -1,0 +1,25 @@
+#!/bin/bash
+
+ACME_VAR=/var/lib/acme
+ACME_WWW=/var/www/challenge
+ACME_BIN=/usr/sbin/acme_tiny
+
+KEY=$ACME_VAR/account.key
+CSR=$ACME_VAR/server.csr
+CRT=$ACME_VAR/server.crt
+LOG=$HOME/renew.log
+
+crt_date="$(openssl x509 -in "$CRT" -noout -enddate | sed -e "s/.*=//")"
+crt_epoch="$(date -ud "$crt_date" +"%s")"
+now_date="$(date +'%Y-%m-%d %H:%M:%S')"
+now_epoch="$(date +'%s')"
+days=$(echo "($crt_epoch - $now_epoch) / (60 * 60 * 24)" | bc)
+
+if [ $days -lt 30 ] ; then
+    echo "$now_date: $days - RENEW" >> $LOG
+    $ACME_BIN --account-key $KEY --csr $CSR --acme-dir $ACME_WWW > ${CRT}.tmp
+    mv -f ${CRT}.tmp $CRT
+    /usr/bin/systemctl restart httpd
+else
+    echo "$now_date: $days - NOOP" >> $LOG
+fi
