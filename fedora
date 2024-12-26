@@ -1,0 +1,68 @@
+#!/bin/sh
+
+set -ef
+
+function gpg_check() {
+    hash=$(gpg --batch --with-colons --show-keys --with-fingerprint $1 | awk -F: '/^fpr/ { print $10 }') 
+
+    if [ $hash == $2 ];then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function import_key() {
+    if ! `gpg_check $1 $2`;then
+        return 1
+    else
+        sudo rpmkeys --import $1
+    fi
+}
+
+function import_key_url() {
+    tempkey=`mktemp`
+    curl --silent --location --output $tempkey "$1"
+    import_key $tempkey $2
+    rm $tempkey
+}
+
+PACKAGES=(
+    htop nmap openssl pwgen rlwrap smartmontools tmux tree vim-enhanced
+    discount p7zip dnf-utils make unrar gstreamer1-plugin-openh264
+    mozilla-openh264 mozilla-ublock-origin dejavu-fonts-all virt-manager
+    gcc gcc-c++ autoconf automake openssl-devel sqlite-devel xz-libs
+    zlib-devel python3-pip python3-devel bzip2-devel expat-devel
+    virt-install python3-libvirt guestfs-tools yt-dlp
+    # brasero gnome-epub-thumbnailer tlp tlp-rdw autoconf automake
+    # bzip2-devel expat-devel gcc gcc-c++ gdbm-devel ncurses-devel
+    # openldap-devel openssl-devel gnome-extensions-app gnome-tweak-tool
+    # xfreerdp python3-devel python-devel readline-devel sqlite-devel
+    # xz-libs zlib-devel
+)
+
+USERNAME=$(whoami)
+VERSION_ID=$(grep '^VERSION_ID' /etc/os-release |cut -f2 -d=)
+
+if [ $VERSION_ID -eq 39 ];then
+    HASH=E8F23996F23218640CB44CBE75CF5AC418B8E74C
+elif [ $VERSION_ID -eq 40 ];then
+    HASH=115DF9AEF857853EE8445D0A0727707EA15B79CC
+elif [ $VERSION_ID -eq 41 ];then
+    HASH=466CF2D8B60BC3057AA9453ED0622462E99D6AD1
+fi
+
+set -x
+import_key /etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-${VERSION_ID}-primary $HASH
+sudo dnf install --setopt=install_weak_deps=False ${PACKAGES[*]}
+sudo usermod -aG cdrom $USERNAME
+sudo usermod -aG libvirt $USERNAME
+# required in 39, not sure about now
+#sudo setcap cap_ipc_lock+pe /usr/bin/wodim
+# >40 does this by default
+#gsettings set org.gnome.desktop.interface clock-format '12h'
+#gsettings set org.gnome.mutter experimental-features "['scale-monitor-framebuffer']" 
+gsettings set org.gnome.settings-daemon.plugins.power ambient-enabled false
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+gsettings set org.gnome.desktop.interface show-battery-percentage true
+gsettings set org.gnome.desktop.privacy remember-recent-files false

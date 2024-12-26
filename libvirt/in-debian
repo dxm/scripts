@@ -1,0 +1,111 @@
+#!/bin/sh
+
+if [ $# -lt 1 ];then
+    echo "`basename $0` NAME"
+    exit
+fi
+
+tempdir=$(mktemp -d /tmp/virt-$1-XXXXX)
+
+cat > $tempdir/preseed.cfg << EOF
+# Locale Setup
+d-i debian-installer/language string en
+d-i debian-installer/country string US
+d-i debian-installer/locale string en_US.UTF-8
+
+# Keyboard Setup
+d-i keyboard-configuration/xkb-keymap select us
+
+# Clock Setup
+d-i time/zone string Americal/Los_Angeles
+
+# Configure hardware clock
+d-i clock-setup/utc boolean true
+d-i clock-setup/utc-auto boolean true
+# set above to false if making a bootable USB to run on same system as Windows
+
+# User Setup
+d-i passwd/root-login boolean true
+d-i passwd/root-password-again password password
+d-i passwd/root-password password password
+d-i passwd/user-fullname string archie
+d-i passwd/user-uid string 1000
+d-i passwd/user-password password password
+d-i passwd/user-password-again password password
+d-i passwd/username string archie
+
+# Package Setup
+d-i apt-setup/cdrom/set-first boolean false
+d-i apt-setup/cdrom/set-next boolean false   
+d-i apt-setup/cdrom/set-failed boolean false
+d-i apt-setup/use_mirror boolean true
+
+#d-i mirror/country string manual
+#d-i mirror/http/hostname string deb.debian.org
+#d-i mirror/http/directory string /debian
+#d-i mirror/http/proxy string
+
+d-i mirror/country string manual
+d-i mirror/http/hostname string http.us.debian.org
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy string
+
+#d-i mirror/country string manual
+#d-i mirror/http/hostname string mirrors.edge.us.kernel.org
+#d-i mirror/http/directory string /debian
+#d-i mirror/http/proxy string
+
+tasksel tasksel/first multiselect ssh-server, standard
+popularity-contest popularity-contest/participate boolean false
+d-i pkgsel/include string sudo, unattended-upgrades, dpkg
+# Whether to upgrade packages after debootstrap
+d-i pkgsel/upgrade select full-upgrade
+
+# Disk configuration
+d-i partman-basicfilesystems/choose_label string gpt
+d-i partman-basicfilesystems/default_label string gpt
+d-i partman-partitioning/choose_label string gpt
+d-i partman-partitioning/default_label string gpt
+d-i partman/choose_label string gpt
+d-i partman/default_label string gpt
+partman-partitioning partman-partitioning/choose_label select gpt
+d-i partman-auto/disk string /dev/vda
+d-i partman-auto/method string regular
+d-i partman-auto/expert_recipe string         \
+   root-swap ::                               \
+     1000 1000 0 linux-swap                   \
+         $primary{ }                          \
+         method{ swap } format{ } .           \
+     1000 20000 -1 ext4                       \
+         $primary{ }                          \
+         method{ format } format{ }           \
+         use_filesystem{ } filesystem{ ext4 } \
+         mountpoint{ / } .                    \
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i grub-installer/bootdev string /dev/vda
+d-i finish-install/reboot_in_progress note
+EOF
+
+# -extra-args='inst.ks=file:kickstart.cfg' --initrd-inject=kickstart.cfg
+#--graphics none \
+
+virt-install \
+--name $1 \
+--hvm \
+--vcpus ${vcpus:=2} \
+--memory ${memory:=4096} \
+--disk path=/var/lib/libvirt/images/${name}.img,size=${size:=10},bus=virtio,cache=none \
+--network network=default,model=virtio \
+--graphics none \
+--console pty,target_type=serial \
+--initrd-inject=$tempdir/preseed.cfg \
+--extra-args="auto=true hostname=$1 domain=virt.lab console=tty0 console=ttyS0,115200n8 serial" \
+--location /var/lib/libvirt/images/debian-12.7.0-amd64-DVD-1.iso
+#--noautoconsole \
+
