@@ -27,19 +27,22 @@ function import_key_url() {
     rm $tempkey
 }
 
+
 PACKAGES=(
-    htop nmap openssl pwgen rlwrap smartmontools tmux tree vim-enhanced
-    discount p7zip dnf-utils make unrar gstreamer1-plugin-openh264
-    mozilla-openh264 mozilla-ublock-origin dejavu-fonts-all virt-manager
-    gcc gcc-c++ autoconf automake openssl-devel sqlite-devel xz-libs
-    zlib-devel python3-pip python3-devel bzip2-devel expat-devel
-    virt-install python3-libvirt guestfs-tools yt-dlp
-    # brasero gnome-epub-thumbnailer tlp tlp-rdw autoconf automake
-    # bzip2-devel expat-devel gcc gcc-c++ gdbm-devel ncurses-devel
-    # openldap-devel openssl-devel gnome-extensions-app gnome-tweak-tool
-    # xfreerdp python3-devel python-devel readline-devel sqlite-devel
-    # xz-libs zlib-devel
+    busybox dejavu-fonts-all discount dnf-utils entr
+    gstreamer1-plugin-openh264 guestfs-tools htop make mozilla-openh264
+    mozilla-ublock-origin mupdf mypaint nmap openssl p7zip pwgen
+    python3-libvirt rlwrap smartmontools sqlite3 sqlite-tcl tcllib
+    tcltls tmux tree unrar vim-enhanced virt-install virt-manager yt-dlp
 )
+
+# brasero gnome-epub-thumbnailer tlp tlp-rdw autoconf automake
+# bzip2-devel expat-devel gcc gcc-c++ gdbm-devel ncurses-devel
+# gcc gcc-c++ autoconf automake openssl-devel sqlite-devel xz-libs
+# zlib-devel python3-pip python3-devel bzip2-devel expat-devel
+# openldap-devel openssl-devel gnome-extensions-app gnome-tweak-tool
+# xfreerdp python3-devel python-devel readline-devel sqlite-devel
+# xz-libs zlib-devel
 
 USERNAME=$(whoami)
 VERSION_ID=$(grep '^VERSION_ID' /etc/os-release |cut -f2 -d=)
