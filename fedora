@@ -33,7 +33,8 @@ PACKAGES=(
     gstreamer1-plugin-openh264 guestfs-tools htop make mozilla-openh264
     mozilla-ublock-origin mupdf mypaint nmap openssl p7zip pwgen
     python3-libvirt rlwrap smartmontools sqlite3 sqlite-tcl tcllib
-    tcltls tmux tree unrar vim-enhanced virt-install virt-manager yt-dlp
+    tcltls tmux tree unrar vim-enhanced virt-install virt-manager
+    wl-clipboard yt-dlp
 )
 
 # brasero gnome-epub-thumbnailer tlp tlp-rdw autoconf automake
