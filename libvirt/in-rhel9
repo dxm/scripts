@@ -1,0 +1,43 @@
+#!/bin/sh
+
+if [ $# -lt 1 ];then
+    echo "`basename $0` NAME"
+    exit
+fi
+
+tempdir=$(mktemp -d /tmp/virt-$1-XXXXX)
+
+cat > $tempdir/kickstart.cfg << EOF
+lang en_US.UTF-8
+keyboard us
+network --bootproto=dhcp --hostname=$1
+rootpw password
+timezone America/Los_Angeles
+text
+skipx
+zerombr
+clearpart --all --initlabel
+part swap --asprimary --size=2048
+part / --fstype=xfs --asprimary --size=1 --grow
+bootloader --location=mbr
+user --name=admin --password=password --groups=wheel
+eula --agreed
+reboot
+
+%packages
+@^minimal-environment
+%end
+EOF
+
+virt-install \
+--name $1 \
+--hvm \
+--vcpus ${vcpus:=2} \
+--memory ${memory:=4096} \
+--disk path=/var/lib/libvirt/images/${1}.img,size=${size:=10} \
+--network network=default \
+--vnc \
+--location /var/lib/libvirt/images/rhel-9.5-x86_64-dvd.iso \
+--extra-args='inst.ks=file:kickstart.cfg' \
+--initrd-inject=$tempdir/kickstart.cfg \
+--noautoconsole --wait=-1 &

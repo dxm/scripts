@@ -57,6 +57,6 @@ virt-install \
     --disk path=/var/lib/libvirt/images/${name}.img,size=${size:=10} \
     --network network=default \
     --vnc \
-    --location /var/lib/libvirt/images/AlmaLinux-9.4-x86_64-dvd.iso \
+    --location /var/lib/libvirt/images/AlmaLinux-9.5-x86_64-dvd.iso \
     --extra-args='inst.ks=file:kickstart.cfg' \
     --initrd-inject=$tempdir/kickstart.cfg
