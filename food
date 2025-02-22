@@ -8,6 +8,7 @@ import datetime, calendar
 
 FASTFOOD=(
     '7-ELEVEN',
+    'ARCO',
     'BURGER KING',
     'CAFE',
     'CARLS JR',
@@ -20,9 +21,11 @@ FASTFOOD=(
     'JERSEY MIKES',
     'JIMBOYS',
     'KFC',
+    'MARKET'
     'MCDONALD',
     'MIYAKO',
     'NATIONS GIANT',
+    'NOODLES',
     'PANERA BREAD',
     'PANDA EXPRESS',
     'SUBWAY',
@@ -47,7 +50,7 @@ with open(sys.argv[1]) as fp:
                 if debit.strip():
                      amount = (float(debit) * -1)
                      total = total + amount
-                     print("%s %-20s %8.2f" % (date, pattern, amount))
+                     print("%s %8.2f %-30s" % (date, amount, descr))
                      debits.append(dict(amount=amount, decr=descr, date=date))
 
 print("")
