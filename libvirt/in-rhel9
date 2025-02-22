@@ -6,6 +6,7 @@ if [ $# -lt 1 ];then
 fi
 
 tempdir=$(mktemp -d /tmp/virt-$1-XXXXX)
+iso=rhel-9.5-x86_64-dvd.iso 
 
 cat > $tempdir/kickstart.cfg << EOF
 lang en_US.UTF-8
@@ -17,7 +18,7 @@ text
 skipx
 zerombr
 clearpart --all --initlabel
-part swap --asprimary --size=2048
+part swap --asprimary --size=1024
 part / --fstype=xfs --asprimary --size=1 --grow
 bootloader --location=mbr
 user --name=admin --password=password --groups=wheel
@@ -35,9 +36,9 @@ virt-install \
 --vcpus ${vcpus:=2} \
 --memory ${memory:=4096} \
 --disk path=/var/lib/libvirt/images/${1}.img,size=${size:=10} \
---network network=default \
+--network network=dev \
 --vnc \
---location /var/lib/libvirt/images/rhel-9.5-x86_64-dvd.iso \
+--location /var/lib/libvirt/images/$iso \
 --extra-args='inst.ks=file:kickstart.cfg' \
 --initrd-inject=$tempdir/kickstart.cfg \
 --noautoconsole --wait=-1 &

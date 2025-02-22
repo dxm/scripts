@@ -28,7 +28,7 @@ PACKAGES=(
     busybox dejavu-fonts-all discount dnf-utils entr
     gstreamer1-plugin-openh264 guestfs-tools htop make mozilla-openh264
     mozilla-ublock-origin mupdf mypaint nmap openssl p7zip pwgen
-    python3-libvirt rlwrap smartmontools sqlite3 sqlite-tcl tcllib
+    python3-libvirt rlwrap smartmontools socat sqlite3 sqlite-tcl tcllib
     tcltls tmux tree unrar vim-enhanced virt-install virt-manager
     virt-top virt-viewer wl-clipboard yt-dlp
 )

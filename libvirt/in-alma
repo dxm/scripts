@@ -55,7 +55,7 @@ virt-install \
     --vcpus ${vcpus:=2} \
     --memory ${memory:=4096} \
     --disk path=/var/lib/libvirt/images/${name}.img,size=${size:=10} \
-    --network network=default \
+    --network network=dev \
     --vnc \
     --location /var/lib/libvirt/images/AlmaLinux-9.5-x86_64-dvd.iso \
     --extra-args='inst.ks=file:kickstart.cfg' \
