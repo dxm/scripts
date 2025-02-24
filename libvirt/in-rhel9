@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# --wait=-1 is needed for reboot after install vs. shutdown.
+
 if [ $# -lt 1 ];then
     echo "`basename $0` NAME"
     exit
@@ -37,8 +39,10 @@ virt-install \
 --memory ${memory:=4096} \
 --disk path=/var/lib/libvirt/images/${1}.img,size=${size:=10} \
 --network network=dev \
---vnc \
+--graphics=none \
 --location /var/lib/libvirt/images/$iso \
+--extra-args console=ttyS0 \
 --extra-args='inst.ks=file:kickstart.cfg' \
 --initrd-inject=$tempdir/kickstart.cfg \
---noautoconsole --wait=-1 &
+--wait=-1 \
+--noautoconsole &
