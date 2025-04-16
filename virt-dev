@@ -6,7 +6,7 @@ iso=rhel-9.5-x86_64-dvd.iso
 cat > $tempdir/kickstart.cfg << EOF
 lang en_US.UTF-8
 keyboard us
-network --bootproto=dhcp --hostname=web
+network --bootproto=dhcp --hostname=dev
 rootpw password
 timezone America/Los_Angeles
 text
@@ -26,11 +26,11 @@ reboot
 EOF
 
 virt-install \
---name web \
+--name dev \
 --hvm \
 --vcpus 2 \
 --memory 2048 \
---disk path=/var/lib/libvirt/images/web.img,size=200 \
+--disk path=/var/lib/libvirt/images/dev.img,size=200 \
 --network network=default \
 --graphics=none \
 --location /var/lib/libvirt/images/$iso \
