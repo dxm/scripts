@@ -24,10 +24,11 @@ USERNAME=$(whoami)
 VERSION_ID=$(grep '^VERSION_ID' /etc/os-release |cut -f2 -d=)
 PACKAGES=(
     alacritty busybox dejavu-fonts-all discount dnf-utils entr
-    gstreamer1-plugin-openh264 guestfs-tools htop make mozilla-openh264
-    mozilla-ublock-origin mupdf nmap openssl p7zip pwgen python3-libvirt
-    rlwrap smartmontools socat sqlite3 tmux tree unrar vim-enhanced
-    virt-install virt-manager virt-top virt-viewer wl-clipboard yt-dlp
+    gstreamer1-plugin-openh264 guestfs-tools htop keepassxc make
+    mozilla-openh264 mozilla-ublock-origin mupdf nmap openssl pass p7zip
+    pwgen python3-libvirt rlwrap smartmontools socat sqlite3 tmux tree
+    unrar vim-enhanced virt-install virt-manager virt-top virt-viewer
+    wl-clipboard yt-dlp
 )
 
 if [ $VERSION_ID -eq 40 ];then
@@ -36,6 +37,8 @@ elif [ $VERSION_ID -eq 41 ];then
     HASH=466CF2D8B60BC3057AA9453ED0622462E99D6AD1
 elif [ $VERSION_ID -eq 42 ];then
     HASH=B0F4950458F69E1150C6C5EDC8AC4916105EF944
+elif [ $VERSION_ID -eq 43 ];then
+    HASH=C6E7F081CF80E13146676E88829B606631645531
 else
     return
 fi
@@ -45,6 +48,7 @@ set -x
 import_key /etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-${VERSION_ID}-primary $HASH
 sudo dnf install --setopt=install_weak_deps=False ${PACKAGES[*]}
 sudo usermod -aG cdrom $USERNAME
+sudo usermod -aG dialout $USERNAME
 sudo usermod -aG libvirt $USERNAME
 gsettings set org.gnome.settings-daemon.plugins.power ambient-enabled false
 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'

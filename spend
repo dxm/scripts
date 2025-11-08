@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+
+import csv, sys, os, re
+import datetime, calendar
+
+
+INCLUDES = (
+    '7-ELEVEN',
+    'AKEBONO',
+    'ARCO',
+    'BEST BUY',
+    'BURGER KING',
+    'CAFE',
+    'CARLS JR',
+    'CHIPOTLE',
+    'CINEMARK',
+    'DEL TACO',
+    'EBAY',
+    'EL POLLO LOCO',
+    'FLORES',
+    'HABIT',
+    'IKEA',
+    'IN N OUT',
+    'JERSEY MIKES',
+    'JIMBOYS',
+    'KFC',
+    'MARKET',
+    'MCDONALD',
+    'MEXICAN',
+    'MIYAKO',
+    'NATION',
+    'NOODLES',
+    'PANDA EXPRESS',
+    'PANERA BREAD',
+    'RAMEN',
+    'REGAL',
+    'SIZZLER',
+    'STEAM',
+    'SUBWAY',
+    'TACO',
+    'TERIYAKI',
+    'TOGO',
+    'WENDY'
+)
+
+EXCLUDES = (
+    'G1 Online.*Transfer',
+)
+
+total = 0.0
+records = []
+other = []
+
+def match(text, words):
+    for i in words:
+        if re.search(i, text, flags=re.IGNORECASE):
+            return True
+
+with open(sys.argv[1]) as fp:
+    reader = csv.DictReader(fp)
+    for row in reader:
+        debit = row.get('Debit')
+        descr = row.get('Description')
+        temp  = row.get('Date')
+        date  = datetime.datetime.strptime(temp, '%m/%d/%Y')
+
+        if debit.strip():
+            amount = (float(debit) * -1)
+            if match(descr, INCLUDES):
+                total += amount
+                print("%s %8.2f %-30s" % (date, amount, descr))
+                records.append(dict(amount=amount, descr=descr, date=date))
+            else:
+                other.append(dict(amount=amount, descr=descr, date=date))
+                
+
+
+print('\nTotal: %.2f' % total)
+
+current_month = None
+current_total = 0
+
+for i, record in enumerate(sorted(records, key=lambda i:  i['date'])):
+
+    month = record['date'].month
+    amount = record['amount']
+
+    if i == 0:
+        current_month = month
+        current_total = amount
+    if i == len(records) - 1:
+        print('Month total %-10s: %.2f' % (calendar.month_name[current_month], current_total))
+    if current_month != month:
+        print('Month total %-10s: %.2f' % (calendar.month_name[current_month], current_total))
+        current_month = month
+        current_total = amount
+    else:
+        current_total += amount
+
+print("\n\nOther:")
+
+total = 0.0
+for i in other:
+    if not match(i['descr'], EXCLUDES):
+        print("%s %8.2f %-30s" % (i['date'], i['amount'], i['descr']))
+        total += i['amount']
+
+print('\nTotal: %.2f' % total)
